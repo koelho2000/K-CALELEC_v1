@@ -101,9 +101,10 @@
 
     <!-- 1. LANDING PAGE -->
     <div id="landing-page" class="fixed inset-0 z-[60] bg-slate-900 flex flex-col items-center justify-center text-white transition-all duration-500">
-        <div class="text-center space-y-6 p-8 max-w-2xl animate-pulse">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl mx-auto flex items-center justify-center shadow-2xl shadow-blue-500/20 mb-4">
-                <i class="fa-solid fa-bolt text-4xl text-white"></i>
+        <div class="text-center space-y-6 p-8 max-w-2xl animate-fade-in">
+            <!-- Logo Replaces Icon -->
+            <div class="mx-auto flex items-center justify-center mb-6">
+                <img src="logo.png" alt="K-CALELEC Logo" class="h-32 w-auto object-contain drop-shadow-2xl" onerror="this.onerror=null; this.src='https://placehold.co/400x200/1e293b/white?text=K-CALELEC';">
             </div>
             <h1 class="text-5xl font-bold tracking-tight">K-CALELEC</h1>
             <p class="text-lg text-slate-300 font-light">Software de Engenharia Eletrotécnica & Orçamentação</p>
@@ -117,10 +118,9 @@
     <nav id="app-header" class="bg-white border-b border-slate-200 sticky top-0 z-40 no-print shadow-sm">
         <div class="max-w-7xl mx-auto px-4 h-16 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-600 rounded-md flex items-center justify-center text-white">
-                    <i class="fa-solid fa-bolt text-sm"></i>
-                </div>
-                <span class="font-bold text-slate-800 tracking-tight">K-CALELEC <span class="text-[10px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 uppercase">Pro</span></span>
+                <!-- Logo in Navbar -->
+                <img src="logo.png" alt="Logo" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://placehold.co/100x100/2563eb/white?text=K';">
+                <span class="font-bold text-slate-800 tracking-tight text-lg hidden md:block">K-CALELEC <span class="text-[10px] bg-slate-100 px-1 py-0.5 rounded text-slate-500 uppercase align-top">Pro</span></span>
             </div>
             
             <!-- Desktop Actions -->
@@ -134,15 +134,15 @@
                 </button>
                 
                 <div class="relative">
-                    <button onclick="toggleMenu()" class="p-2 text-slate-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                    <div id="main-menu" class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 hidden py-1 text-sm z-50">
-                        <label class="block px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-2">
-                            <i class="fa-solid fa-upload w-4 text-slate-400"></i> Carregar
+                    <button onclick="toggleMenu()" class="p-2 text-slate-400 hover:text-blue-600 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-50"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    <div id="main-menu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-100 hidden py-2 text-sm z-50 transform origin-top-right transition-all">
+                        <label class="px-4 py-3 hover:bg-slate-50 cursor-pointer flex items-center gap-3 text-slate-700 transition-colors">
+                            <i class="fa-solid fa-upload w-4 text-blue-500"></i> Carregar Obra
                             <input type="file" class="hidden" onchange="importProject(this)">
                         </label>
-                        <button onclick="exportProject()" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2"><i class="fa-solid fa-download w-4 text-slate-400"></i> Guardar</button>
+                        <button onclick="exportProject()" class="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-center gap-3 text-slate-700 transition-colors"><i class="fa-solid fa-download w-4 text-green-500"></i> Guardar Obra</button>
                         <div class="border-t border-slate-100 my-1"></div>
-                        <button onclick="clearAll()" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="fa-solid fa-trash w-4"></i> Limpar</button>
+                        <button onclick="clearAll()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"><i class="fa-solid fa-trash w-4"></i> Limpar Tudo</button>
                     </div>
                 </div>
             </div>
@@ -229,14 +229,20 @@
         </div>
 
         <!-- Page 1: Cover -->
-        <div class="report-page flex flex-col justify-between">
-            <div class="border-t-8 border-blue-600 pt-10">
+        <div class="report-page flex flex-col justify-between relative">
+             <!-- Watermark -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
+                <img src="logo.png" class="w-[80%]" onerror="this.style.display='none'">
+            </div>
+
+            <div class="border-t-8 border-blue-600 pt-10 relative z-10">
+                <img src="logo.png" class="h-20 w-auto mb-8 object-contain" onerror="this.onerror=null; this.src='https://placehold.co/200x80/2563eb/white?text=K-CALELEC';">
                 <div class="text-sm font-bold text-slate-400 tracking-[0.2em] uppercase mb-2">Engenharia Eletrotécnica</div>
                 <h1 class="text-6xl font-bold text-slate-900 mb-6 leading-tight">Dossier<br>Técnico</h1>
                 <h2 class="text-2xl font-light text-slate-600">Instalações Elétricas & AVAC</h2>
             </div>
             
-            <div class="grid grid-cols-2 gap-y-12 gap-x-8">
+            <div class="grid grid-cols-2 gap-y-12 gap-x-8 relative z-10">
                 <div class="border-l-4 border-slate-200 pl-4">
                     <div class="text-xs font-bold text-slate-400 uppercase mb-1">Projeto</div>
                     <div class="text-xl font-semibold text-slate-800" id="rpt-project">-</div>
@@ -255,7 +261,7 @@
                 </div>
             </div>
 
-            <div class="text-center border-t border-slate-100 pt-8">
+            <div class="text-center border-t border-slate-100 pt-8 relative z-10">
                 <p class="text-sm text-slate-400">Documento gerado automaticamente via K-CALELEC Pro</p>
             </div>
         </div>
@@ -517,23 +523,31 @@
             updateUI();
         }
 
+        // Improved Menu Toggle Logic
         function toggleMenu() {
             const m = document.getElementById('main-menu');
             if(m.classList.contains('hidden')) {
                 m.classList.remove('hidden');
-                // Close when clicking outside (delayed to prevent immediate close)
+                // Delay adding listener to avoid immediate close from the trigger click bubbling
                 setTimeout(() => {
-                     document.addEventListener('click', closeMenuOutside, {once:true});
+                     document.addEventListener('click', closeMenuOutside);
                 }, 0);
             } else {
-                m.classList.add('hidden');
+                closeMenu();
             }
+        }
+        
+        function closeMenu() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.removeEventListener('click', closeMenuOutside);
         }
 
         function closeMenuOutside(e) {
             const m = document.getElementById('main-menu');
-            if(!m.contains(e.target) && !e.target.closest('button[onclick="toggleMenu()"]')) {
-                m.classList.add('hidden');
+            const btn = document.querySelector('button[onclick="toggleMenu()"]');
+            // If click is NOT inside menu AND NOT on the toggle button, close it.
+            if(!m.contains(e.target) && !btn.contains(e.target)) {
+                closeMenu();
             }
         }
 
@@ -930,7 +944,7 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         
         function clearAll() { 
-            if(confirm("Tem a certeza que pretende limpar todos os dados do projeto?")) { 
+            if(confirm("Tem a certeza que pretende limpar todos os dados do projeto?\nTodos os quadros e equipamentos serão removidos.")) { 
                 // Reset State
                 appData = { projectName: '', technicianName: '', mainVoltage: 230, boards: [] };
                 
@@ -943,7 +957,7 @@
                 
                 // Reset UI to default
                 setVoltage(230);
-                document.getElementById('main-menu').classList.add('hidden');
+                closeMenu();
             } 
         }
 
@@ -1352,8 +1366,8 @@
                 backCover.innerHTML = `
                     <div class="report-page page-break flex flex-col items-center justify-between text-center bg-slate-900 text-white" style="background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                         <div class="flex-1 flex flex-col justify-center items-center gap-8">
-                            <div class="w-32 h-32 border-4 border-white rounded-full flex items-center justify-center mb-6">
-                                <i class="fa-solid fa-bolt text-6xl text-white"></i>
+                             <div class="w-48 bg-white rounded-2xl p-6 shadow-2xl mb-8">
+                                <img src="logo.png" class="w-full h-auto object-contain" onerror="this.style.display='none'">
                             </div>
                             <h1 class="text-5xl font-bold tracking-widest uppercase">K-CALELEC</h1>
                             <div class="w-24 h-1 bg-blue-500"></div>
