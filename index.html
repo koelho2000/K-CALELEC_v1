@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
@@ -33,10 +32,22 @@
         
         /* Diagram Styles */
         .diagram-line { stroke: #0f172a; stroke-width: 1.5; fill: none; shape-rendering: crispEdges; }
-        .diagram-line-pe { stroke: #16a34a; stroke-width: 1.5; stroke-dasharray: 4,2; fill: none; }
-        .diagram-line-n { stroke: #2563eb; stroke-width: 1.5; fill: none; }
         .diagram-text { font-family: 'Inter', sans-serif; font-size: 10px; fill: #334155; }
-        .diagram-symbol { fill: white; stroke: #0f172a; stroke-width: 1.5; }
+
+        /* Tooltip Styles */
+        .tooltip { position: relative; display: inline-block; }
+        .tooltip .tooltip-text {
+            visibility: hidden; width: 220px; background-color: #1e293b; color: #fff;
+            text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 50;
+            bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.2s;
+            font-size: 11px; font-weight: normal; pointer-events: none; line-height: 1.4;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip .tooltip-text::after {
+            content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+            border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent;
+        }
+        .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
 
         /* Print Styles */
         @media print {
@@ -45,7 +56,7 @@
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             
-            #report-view { padding: 0; width: 100%; }
+            #report-view { padding: 0; width: 100%; display: block !important; }
             .page-break { page-break-before: always; }
             .avoid-break { page-break-inside: avoid; }
             
@@ -57,12 +68,14 @@
                 margin: 0 auto; 
                 background: white;
                 position: relative;
+                overflow: hidden;
+                box-shadow: none;
             }
             
             /* Table Styling for Print */
-            table { font-size: 10pt; width: 100%; border-collapse: collapse; }
-            th { background-color: #f1f5f9 !important; color: #0f172a !important; font-weight: bold; border: 1px solid #e2e8f0; }
-            td { border: 1px solid #e2e8f0; }
+            table { font-size: 9pt; width: 100%; border-collapse: collapse; }
+            th { background-color: #f1f5f9 !important; color: #0f172a !important; font-weight: bold; border: 1px solid #e2e8f0; padding: 6px; }
+            td { border: 1px solid #e2e8f0; padding: 6px; }
         }
 
         .print-only { display: none; }
@@ -80,6 +93,7 @@
             margin: 0 auto 20px auto;
             padding: 15mm;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
         }
     </style>
 </head>
@@ -119,16 +133,16 @@
                     <i class="fa-solid fa-file-pdf"></i> Relatório
                 </button>
                 
-                <div class="relative group">
-                    <button class="p-2 text-slate-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-                    <div class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 hidden group-hover:block py-1 text-sm">
-                        <label class="block px-4 py-2 hover:bg-slate-50 cursor-pointer">
-                            <i class="fa-solid fa-upload w-5"></i> Carregar
+                <div class="relative">
+                    <button onclick="toggleMenu()" class="p-2 text-slate-400 hover:text-blue-600 transition-colors"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    <div id="main-menu" class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-100 hidden py-1 text-sm z-50">
+                        <label class="block px-4 py-2 hover:bg-slate-50 cursor-pointer flex items-center gap-2">
+                            <i class="fa-solid fa-upload w-4 text-slate-400"></i> Carregar
                             <input type="file" class="hidden" onchange="importProject(this)">
                         </label>
-                        <button onclick="exportProject()" class="w-full text-left px-4 py-2 hover:bg-slate-50"><i class="fa-solid fa-download w-5"></i> Guardar</button>
+                        <button onclick="exportProject()" class="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2"><i class="fa-solid fa-download w-4 text-slate-400"></i> Guardar</button>
                         <div class="border-t border-slate-100 my-1"></div>
-                        <button onclick="clearAll()" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"><i class="fa-solid fa-trash w-5"></i> Limpar</button>
+                        <button onclick="clearAll()" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"><i class="fa-solid fa-trash w-4"></i> Limpar</button>
                     </div>
                 </div>
             </div>
@@ -203,7 +217,7 @@
     </main>
 
     <!-- 4. REPORT VIEW (Printable A4) -->
-    <div id="report-view" class="hidden print-only">
+    <div id="report-view" class="hidden">
         
         <div class="fixed bottom-8 right-8 flex flex-col gap-3 z-50 no-print">
             <button onclick="window.print()" class="w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center transition-transform hover:scale-110" title="Imprimir">
@@ -263,8 +277,14 @@
         <!-- Pages: Tables per Board -->
         <div id="report-tables"></div>
 
+        <!-- Pages: Terminal Blocks per Board -->
+        <div id="report-terminals"></div>
+
         <!-- Pages: Schematics per Board -->
         <div id="report-schematics"></div>
+        
+        <!-- Page: Back Cover -->
+        <div id="report-back-cover"></div>
 
     </div>
 
@@ -302,12 +322,21 @@
                          </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Curva</label>
-                        <select id="eq-curve" class="w-full border border-slate-300 rounded p-2 bg-white outline-none">
-                            <option value="C">Curva C (Geral)</option>
-                            <option value="B">Curva B (Resistivo)</option>
-                            <option value="D">Curva D (Motores)</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                            Curva <i class="fa-solid fa-circle-info text-slate-400 text-[10px]"></i>
+                        </label>
+                        <div class="tooltip w-full">
+                            <select id="eq-curve" class="w-full border border-slate-300 rounded p-2 bg-white outline-none cursor-pointer">
+                                <option value="C">Curva C (Geral)</option>
+                                <option value="B">Curva B (Resistivo)</option>
+                                <option value="D">Curva D (Motores)</option>
+                            </select>
+                            <span class="tooltip-text">
+                                <strong>B:</strong> Cargas resistivas (aquecimento)<br>
+                                <strong>C:</strong> Cargas gerais (luzes/tomadas)<br>
+                                <strong>D:</strong> Cargas com pico arranque (motores)
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="pt-4 border-t border-slate-100 space-y-3">
@@ -342,6 +371,17 @@
             <!-- SVGs injected here -->
         </div>
     </div>
+    
+    <!-- Terminal Block Modal -->
+    <div id="terminal-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-grip-lines-vertical text-slate-500"></i> Régua de Bornes</h3>
+                <button onclick="closeModal('terminal-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="terminal-modal-content" class="p-8 overflow-y-auto bg-slate-100"></div>
+        </div>
+    </div>
 
     <!-- Quantity/Materials Modal -->
     <div id="quantity-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
@@ -351,6 +391,74 @@
                 <button onclick="closeModal('quantity-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 overflow-y-auto" id="qty-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Board Settings Modal -->
+    <div id="board-settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
+                <h3 class="font-bold text-slate-800">Configurações do Quadro</h3>
+                <button onclick="closeModal('board-settings-modal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-6 overflow-y-auto">
+                <input type="hidden" id="settings-bid">
+                
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-slate-100 pb-1">Invólucro & Corte</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-transparent-door" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Porta Transparente</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-mx-coil" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Bobine MX no Corte Geral</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-slate-100 pb-1">Equipamentos Auxiliares</h4>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-signal-lights" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Sinalizadores de Fase</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-socket" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Tomada 230V Calha DIN</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-overvoltage" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Relé Sobretensão</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-analyzer" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Analisador de Energia</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-3 border-b border-slate-100 pb-1">Comando & Transformação</h4>
+                    <div class="space-y-2">
+                         <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-ups" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">UPS (Circuito de Comando)</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-2 rounded -ml-2">
+                            <input type="checkbox" id="opt-transformer" class="w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700">Transformador Isolamento</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+            <div class="p-4 border-t border-slate-100 flex justify-end gap-2">
+                <button onclick="closeModal('board-settings-modal')" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded">Cancelar</button>
+                <button onclick="saveBoardSettings()" class="px-6 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">Guardar</button>
+            </div>
         </div>
     </div>
 
@@ -367,16 +475,29 @@
             cable: { '1.5': 0.65, '2.5': 0.95, '4': 1.40, '6': 2.10, '10': 3.50, '16': 5.50, '25': 8.00, '35': 12.00, '50': 18.00 },
             board_module: 5.00, // Price per module space in enclosure + assembly
             labor_hour: 35.00,
-            engineering_base: 250.00
+            engineering_base: 250.00,
+            // New Options
+            mx_coil: 45.00,
+            signal_lights: 30.00, // Kit of 3
+            socket: 15.00,
+            overvoltage: 65.00,
+            ups: 120.00,
+            analyzer: 180.00,
+            transformer: 60.00,
+            transparent_door_add: 30.00
         };
 
-        const STANDARD_BREAKERS = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125];
+        // Extended Breaker list
+        const STANDARD_BREAKERS = [6, 10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600];
+        
         const CABLE_TABLE = [
             { s: 1.5, iz_1: 17.5, iz_3: 15.5 }, { s: 2.5, iz_1: 24, iz_3: 21 },
             { s: 4, iz_1: 32, iz_3: 28 }, { s: 6, iz_1: 41, iz_3: 36 },
             { s: 10, iz_1: 57, iz_3: 50 }, { s: 16, iz_1: 76, iz_3: 68 },
             { s: 25, iz_1: 101, iz_3: 89 }, { s: 35, iz_1: 125, iz_3: 110 },
-            { s: 50, iz_1: 151, iz_3: 134 }
+            { s: 50, iz_1: 151, iz_3: 134 },
+            { s: 70, iz_1: 192, iz_3: 171 }, { s: 95, iz_1: 232, iz_3: 207 },
+            { s: 120, iz_1: 269, iz_3: 239 }, { s: 150, iz_1: 300, iz_3: 270 }
         ];
 
         /* --- APP STATE --- */
@@ -396,6 +517,26 @@
             updateUI();
         }
 
+        function toggleMenu() {
+            const m = document.getElementById('main-menu');
+            if(m.classList.contains('hidden')) {
+                m.classList.remove('hidden');
+                // Close when clicking outside (delayed to prevent immediate close)
+                setTimeout(() => {
+                     document.addEventListener('click', closeMenuOutside, {once:true});
+                }, 0);
+            } else {
+                m.classList.add('hidden');
+            }
+        }
+
+        function closeMenuOutside(e) {
+            const m = document.getElementById('main-menu');
+            if(!m.contains(e.target) && !e.target.closest('button[onclick="toggleMenu()"]')) {
+                m.classList.add('hidden');
+            }
+        }
+
         /* --- CORE CALCULATIONS --- */
         function calculateCircuit(c) {
             const is3Ph = parseInt(c.phases) === 3;
@@ -406,7 +547,7 @@
             let ib = (c.power * 1000) / denom;
             
             // Breaker Selection
-            let breakerIn = STANDARD_BREAKERS.find(b => b >= ib) || 125;
+            let breakerIn = STANDARD_BREAKERS.find(b => b >= ib) || STANDARD_BREAKERS[STANDARD_BREAKERS.length-1];
             
             // Cable Selection (simplified for voltage drop)
             let cable = null;
@@ -429,7 +570,7 @@
                     }
                 }
             }
-            if (!cable) { cable = 50; vDrop = 9.9; }
+            if (!cable) { cable = 150; vDrop = 9.9; }
 
             return { ib: ib.toFixed(2), breakerIn, cableSection: cable, voltageDrop: vDrop.toFixed(2) };
         }
@@ -455,7 +596,7 @@
             let mainI = (totalPower * 1000) / (v==230 ? (230*0.9) : (400*Math.sqrt(3)*0.9));
             document.getElementById('disp-current').innerText = mainI.toFixed(1) + " A";
             
-            let mainB = STANDARD_BREAKERS.find(b => b >= mainI) || ">125";
+            let mainB = STANDARD_BREAKERS.find(b => b >= mainI) || STANDARD_BREAKERS[STANDARD_BREAKERS.length-1];
             document.getElementById('disp-breaker').innerText = mainB + " A";
         }
 
@@ -479,7 +620,18 @@
                                 <div class="text-xs text-slate-400 mt-0.5">Potência Quadro: ${bPower.toFixed(1)} kW</div>
                             </div>
                         </div>
-                        <button onclick="deleteBoard('${board.id}')" class="text-slate-400 hover:text-red-400"><i class="fa-solid fa-trash"></i></button>
+                        <div class="flex gap-2">
+                             <button onclick="openBoardSettings('${board.id}')" class="w-8 h-8 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition-colors flex items-center justify-center" title="Definições do Quadro">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            <button onclick="showTerminalBlock('${board.id}')" class="w-8 h-8 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white transition-colors flex items-center justify-center" title="Régua de Bornes">
+                                <i class="fa-solid fa-grip-lines-vertical"></i>
+                            </button>
+                            <div class="w-px h-8 bg-slate-600 mx-1"></div>
+                            <button onclick="deleteBoard('${board.id}')" class="w-8 h-8 rounded bg-slate-700 text-slate-300 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="p-4 md:p-6 bg-slate-50 space-y-6">`;
                 
@@ -495,7 +647,15 @@
                                 <input type="text" value="${g.name}" onchange="updateGroupName('${board.id}','${g.id}',this.value)" class="font-semibold text-slate-700 border-b border-transparent hover:border-slate-300 outline-none">
                             </div>
                             <div class="flex items-center gap-3 text-sm">
-                                <span class="bg-slate-100 px-2 py-1 rounded text-slate-500 text-xs">IDR ${idr}A/${g.sensitivity}mA</span>
+                                <div class="tooltip">
+                                    <select onchange="updateGroupSensitivity('${board.id}','${g.id}',this.value)" class="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-1 rounded border-none outline-none cursor-pointer hover:bg-slate-200">
+                                        <option value="30" ${g.sensitivity==30?'selected':''}>30mA</option>
+                                        <option value="100" ${g.sensitivity==100?'selected':''}>100mA</option>
+                                        <option value="300" ${g.sensitivity==300?'selected':''}>300mA</option>
+                                    </select>
+                                    <span class="tooltip-text">Sensibilidade do Diferencial.<br>30mA: Pessoas (WC/Geral)<br>300mA: Instalação (Motores)</span>
+                                </div>
+                                <span class="bg-slate-100 px-2 py-1 rounded text-slate-500 text-xs font-bold">IDR ${idr}A</span>
                                 <div class="flex gap-1">
                                     <button onclick="pasteCircuit('${board.id}','${g.id}')" class="p-1.5 text-slate-400 hover:bg-slate-50 rounded"><i class="fa-regular fa-paste"></i></button>
                                     <button onclick="deleteGroup('${board.id}','${g.id}')" class="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-50 rounded"><i class="fa-solid fa-xmark"></i></button>
@@ -569,7 +729,21 @@
 
         /* --- DATA OPS --- */
         function addBoard() {
-            appData.boards.push({ id: Date.now().toString(), name: `Quadro ${appData.boards.length+1}`, groups: [{ id: (Date.now()+1).toString(), name: 'Grupo 1', sensitivity: 30, circuits: [] }] });
+            appData.boards.push({ 
+                id: Date.now().toString(), 
+                name: `Quadro ${appData.boards.length+1}`,
+                options: {
+                    transparentDoor: false,
+                    mxCoil: false,
+                    signalLights: false,
+                    socket: false,
+                    overvoltage: false,
+                    ups: false,
+                    analyzer: false,
+                    transformer: false
+                },
+                groups: [{ id: (Date.now()+1).toString(), name: 'Grupo 1', sensitivity: 30, circuits: [] }] 
+            });
             updateUI();
         }
         function deleteBoard(id) { if(confirm('Apagar quadro?')) { appData.boards = appData.boards.filter(b=>b.id!==id); updateUI(); } }
@@ -578,6 +752,98 @@
         function addGroup(bid) { appData.boards.find(b=>b.id===bid).groups.push({ id: Date.now().toString(), name: 'Novo Grupo', sensitivity: 30, circuits:[] }); updateUI(); }
         function deleteGroup(bid,gid) { let b = appData.boards.find(b=>b.id===bid); b.groups = b.groups.filter(g=>g.id!==gid); updateUI(); }
         function updateGroupName(bid,gid,v) { appData.boards.find(b=>b.id===bid).groups.find(g=>g.id===gid).name = v; }
+        function updateGroupSensitivity(bid, gid, v) { appData.boards.find(b=>b.id===bid).groups.find(g=>g.id===gid).sensitivity = parseInt(v); updateUI(); }
+
+        /* --- BOARD SETTINGS --- */
+        function openBoardSettings(bid) {
+             const b = appData.boards.find(x=>x.id===bid);
+             document.getElementById('settings-bid').value = bid;
+             
+             const opts = b.options || {};
+             document.getElementById('opt-transparent-door').checked = opts.transparentDoor || false;
+             document.getElementById('opt-mx-coil').checked = opts.mxCoil || false;
+             document.getElementById('opt-signal-lights').checked = opts.signalLights || false;
+             document.getElementById('opt-socket').checked = opts.socket || false;
+             document.getElementById('opt-overvoltage').checked = opts.overvoltage || false;
+             document.getElementById('opt-ups').checked = opts.ups || false;
+             document.getElementById('opt-analyzer').checked = opts.analyzer || false;
+             document.getElementById('opt-transformer').checked = opts.transformer || false;
+             
+             document.getElementById('board-settings-modal').classList.remove('hidden');
+        }
+        
+        function saveBoardSettings() {
+            const bid = document.getElementById('settings-bid').value;
+            const b = appData.boards.find(x=>x.id===bid);
+            
+            if (!b.options) b.options = {};
+            
+            b.options.transparentDoor = document.getElementById('opt-transparent-door').checked;
+            b.options.mxCoil = document.getElementById('opt-mx-coil').checked;
+            b.options.signalLights = document.getElementById('opt-signal-lights').checked;
+            b.options.socket = document.getElementById('opt-socket').checked;
+            b.options.overvoltage = document.getElementById('opt-overvoltage').checked;
+            b.options.ups = document.getElementById('opt-ups').checked;
+            b.options.analyzer = document.getElementById('opt-analyzer').checked;
+            b.options.transformer = document.getElementById('opt-transformer').checked;
+            
+            closeModal('board-settings-modal');
+            updateUI();
+        }
+        
+        /* --- TERMINAL BLOCK GENERATOR --- */
+        function generateTerminalBlockHTML(bid) {
+            const b = appData.boards.find(x=>x.id===bid);
+            let html = `
+                <div class="overflow-x-auto bg-white rounded-lg border border-slate-200 shadow-sm mb-6">
+                    <div class="bg-slate-50 p-3 border-b border-slate-200 font-bold text-slate-700">${b.name} - Régua de Bornes</div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-xs">
+                            <tr>
+                                <th class="p-3 border-b border-slate-200">Circuito</th>
+                                <th class="p-3 border-b border-slate-200 text-center">Secção</th>
+                                <th class="p-3 border-b border-slate-200 text-center">L1</th>
+                                <th class="p-3 border-b border-slate-200 text-center">L2</th>
+                                <th class="p-3 border-b border-slate-200 text-center">L3</th>
+                                <th class="p-3 border-b border-slate-200 text-center">N</th>
+                                <th class="p-3 border-b border-slate-200 text-center">PE</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+            `;
+            
+            let termCount = 1;
+            b.groups.forEach(g => {
+                html += `<tr class="bg-slate-50/50"><td colspan="7" class="px-3 py-2 text-xs font-bold text-slate-500">${g.name}</td></tr>`;
+                g.circuits.forEach(c => {
+                    const is3 = parseInt(c.phases) === 3;
+                    const colorClass = "bg-slate-200 text-slate-700 font-mono text-xs p-1 rounded w-8 inline-block text-center border border-slate-300";
+                    const peClass = "bg-yellow-300/40 border-yellow-400 text-green-800 font-mono text-xs p-1 rounded w-8 inline-block text-center border";
+                    const nClass = "bg-blue-100 text-blue-800 border-blue-200 font-mono text-xs p-1 rounded w-8 inline-block text-center border";
+                    
+                    html += `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-3 font-medium text-slate-700">${c.name}</td>
+                            <td class="p-3 text-center text-slate-500">${c.results.cableSection}mm²</td>
+                            <td class="p-3 text-center"><span class="${colorClass}">${termCount++}</span></td>
+                            <td class="p-3 text-center">${is3 ? `<span class="${colorClass}">${termCount++}</span>` : '<span class="text-slate-200">-</span>'}</td>
+                            <td class="p-3 text-center">${is3 ? `<span class="${colorClass}">${termCount++}</span>` : '<span class="text-slate-200">-</span>'}</td>
+                            <td class="p-3 text-center"><span class="${nClass}">${termCount++}</span></td>
+                            <td class="p-3 text-center"><span class="${peClass}">${termCount++}</span></td>
+                        </tr>
+                    `;
+                });
+            });
+            
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function showTerminalBlock(bid) {
+            const content = document.getElementById('terminal-modal-content');
+            content.innerHTML = generateTerminalBlockHTML(bid);
+            document.getElementById('terminal-modal').classList.remove('hidden');
+        }
 
         /* --- MODALS & CIRCUITS --- */
         function openEqModal(bid, gid, cid) {
@@ -662,7 +928,24 @@
         }
         
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function clearAll() { if(confirm("Limpar tudo?")) { appData.boards=[]; addBoard(); appData.projectName=''; appData.technicianName=''; updateUI(); } }
+        
+        function clearAll() { 
+            if(confirm("Tem a certeza que pretende limpar todos os dados do projeto?")) { 
+                // Reset State
+                appData = { projectName: '', technicianName: '', mainVoltage: 230, boards: [] };
+                
+                // Reset Inputs
+                document.getElementById('project-name').value = '';
+                document.getElementById('technician-name').value = '';
+                
+                // Add Default Board
+                addBoard(); 
+                
+                // Reset UI to default
+                setVoltage(230);
+                document.getElementById('main-menu').classList.add('hidden');
+            } 
+        }
 
         /* --- FILE IO --- */
         function exportProject() {
@@ -679,110 +962,152 @@
             r.readAsText(f);
         }
 
-        /* --- DIAGRAM ENGINE (Separated by Board) --- */
+        /* --- DIAGRAM ENGINE (Improved) --- */
         function generateSVGs() {
             const svgs = [];
             
             appData.boards.forEach(board => {
-                // Constants
-                const SPACING_X = 60;
-                const SPACING_GROUP = 30;
-                const START_X = 60;
-                const START_Y = 80;
+                const SPACING_X = 70;
+                const SPACING_GROUP = 40;
+                const START_X = 100;
+                const START_Y = 120;
                 
-                let currentX = START_X;
                 let maxX = START_X;
-                let maxCircuits = 0;
-                
-                // Calculate Dimensions
                 board.groups.forEach(g => {
                     let gw = Math.max(g.circuits.length * SPACING_X, SPACING_X);
                     maxX += gw + SPACING_GROUP;
-                    if(g.circuits.length > maxCircuits) maxCircuits = g.circuits.length;
                 });
                 
-                const height = 400 + (maxCircuits * 50); // Dynamic height? No, fixed height with flow
-                const width = Math.max(800, maxX + 50);
-                const fixedHeight = 600;
+                const width = Math.max(1123, maxX + 50); // A4 Landscape min width ish
+                const height = 794; // A4 height
                 
-                let svg = `<svg width="${width}" height="${fixedHeight}" viewBox="0 0 ${width} ${fixedHeight}" xmlns="http://www.w3.org/2000/svg" style="background:white; border:1px solid #e2e8f0; margin-bottom: 20px;">
-                    <text x="20" y="30" font-family="Inter" font-weight="bold" font-size="16">${board.name}</text>
-                    <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#000" /></marker></defs>`;
-                
-                // Draw Main Bus
+                // IEC Symbols
+                let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="background:white; border:1px solid #e2e8f0; margin-bottom: 20px;">
+                    <defs>
+                        <style>
+                            text { font-family: 'Inter', sans-serif; }
+                            .label { font-size: 10px; fill: #334155; }
+                            .title { font-size: 18px; font-weight: bold; fill: #0f172a; }
+                        </style>
+                        
+                        <!-- MCB Symbol (Magneto-Thermal) -->
+                        <g id="sym-mcb">
+                            <line x1="0" y1="0" x2="0" y2="40" stroke="#0f172a" stroke-width="1.5" />
+                            <line x1="-5" y1="10" x2="10" y2="-5" stroke="#0f172a" stroke-width="1.5" />
+                            <path d="M-3,5 L3,-1" stroke="#0f172a" stroke-width="1.5" />
+                            <path d="M0,0 L0,40" stroke="#0f172a" stroke-width="1.5" />
+                            <!-- Cross -->
+                            <line x1="-4" y1="15" x2="4" y2="23" stroke="#0f172a" stroke-width="1.5" />
+                            <line x1="4" y1="15" x2="-4" y2="23" stroke="#0f172a" stroke-width="1.5" />
+                        </g>
+
+                        <!-- RCD Symbol (Differential) -->
+                        <g id="sym-rcd">
+                            <line x1="0" y1="0" x2="0" y2="40" stroke="#0f172a" stroke-width="1.5" />
+                            <line x1="-5" y1="10" x2="10" y2="-5" stroke="#0f172a" stroke-width="1.5" />
+                            <ellipse cx="0" cy="18" rx="8" ry="4" fill="white" stroke="#0f172a" stroke-width="1.5" />
+                        </g>
+                        
+                         <!-- Contactor Symbol -->
+                        <g id="sym-km">
+                            <rect x="-10" y="0" width="20" height="20" fill="white" stroke="#0f172a" stroke-width="1.5" />
+                            <line x1="-10" y1="0" x2="10" y2="20" stroke="#0f172a" stroke-width="1" />
+                        </g>
+                    </defs>
+
+                    <!-- Title Block (IEC Style) -->
+                    <rect x="20" y="${height-100}" width="${width-40}" height="80" fill="none" stroke="#0f172a" stroke-width="2" />
+                    <line x1="${width-250}" y1="${height-100}" x2="${width-250}" y2="${height-20}" stroke="#0f172a" stroke-width="1" />
+                    <line x1="20" y1="${height-60}" x2="${width-20}" y2="${height-60}" stroke="#0f172a" stroke-width="1" />
+                    
+                    <text x="40" y="${height-75}" class="title">${board.name}</text>
+                    <text x="40" y="${height-35}" class="label" font-size="12">Projeto: ${appData.projectName || 'N/D'}</text>
+                    <text x="300" y="${height-35}" class="label" font-size="12">Engenheiro: ${appData.technicianName || 'N/D'}</text>
+                    <text x="${width-230}" y="${height-75}" font-size="12" fill="#64748b">K-CALELEC</text>
+                    <text x="${width-230}" y="${height-35}" font-size="10" fill="#64748b">Data: ${new Date().toLocaleDateString()}</text>
+                    `;
+
+                // Main Busbars
                 const phases = appData.mainVoltage === 400 ? 3 : 1;
                 const busY = START_Y;
+                const busEndX = width - 60;
                 
-                // L1..L3, N, PE
                 for(let i=0; i<phases; i++) {
-                    svg += `<line x1="40" y1="${busY + (i*10)}" x2="${width-40}" y2="${busY + (i*10)}" class="diagram-line" />`;
-                    svg += `<text x="20" y="${busY + (i*10) + 3}" class="diagram-text font-bold">L${i+1}</text>`;
+                    svg += `<line x1="60" y1="${busY + (i*10)}" x2="${busEndX}" y2="${busY + (i*10)}" stroke="#0f172a" stroke-width="2" />`;
+                    svg += `<text x="30" y="${busY + (i*10) + 4}" font-family="JetBrains Mono" font-weight="bold" font-size="10">L${i+1}</text>`;
                 }
-                svg += `<line x1="40" y1="${busY + (phases*10)}" x2="${width-40}" y2="${busY + (phases*10)}" class="diagram-line-n" />`;
-                svg += `<text x="20" y="${busY + (phases*10) + 3}" class="diagram-text font-bold">N</text>`;
+                svg += `<line x1="60" y1="${busY + (phases*10)}" x2="${busEndX}" y2="${busY + (phases*10)}" stroke="#2563eb" stroke-width="2" />`;
+                svg += `<text x="30" y="${busY + (phases*10) + 4}" font-family="JetBrains Mono" font-weight="bold" font-size="10" fill="#2563eb">N</text>`;
                 
-                svg += `<line x1="40" y1="${busY + (phases*10)+15}" x2="${width-40}" y2="${busY + (phases*10)+15}" class="diagram-line-pe" />`;
-                svg += `<text x="20" y="${busY + (phases*10) + 18}" class="diagram-text font-bold">PE</text>`;
+                svg += `<line x1="60" y1="${busY + (phases*10)+15}" x2="${busEndX}" y2="${busY + (phases*10)+15}" stroke="#16a34a" stroke-width="2" stroke-dasharray="6,3" />`;
+                svg += `<text x="30" y="${busY + (phases*10) + 19}" font-family="JetBrains Mono" font-weight="bold" font-size="10" fill="#16a34a">PE</text>`;
 
+                // Drawing logic
                 let drawX = START_X;
-                
+
                 board.groups.forEach(g => {
                     const gw = Math.max(g.circuits.length * SPACING_X, SPACING_X);
-                    const cx = drawX + (gw/2);
+                    const cx = drawX + (gw/2); 
                     
-                    // IDR Vertical Line
-                    const idrTop = busY + (phases*10); 
-                    const idrY = busY + 80;
+                    const busBottomY = busY + (phases*10) + 15;
+                    const idrTopY = busBottomY + 30;
                     
-                    // Drop from phases (simplified single line representation)
-                    svg += `<line x1="${cx}" y1="${busY}" x2="${cx}" y2="${idrY}" class="diagram-line" />`;
-                    
+                    // Connection from Bus to IDR
+                    svg += `<line x1="${cx}" y1="${busY}" x2="${cx}" y2="${idrTopY}" stroke="#0f172a" stroke-width="1.5" />`;
+                    // Dot on connection
+                    svg += `<circle cx="${cx}" cy="${busY}" r="2" fill="black" />`;
+
                     // IDR Symbol
-                    svg += `<ellipse cx="${cx}" cy="${idrY+15}" rx="20" ry="10" class="diagram-symbol" />`;
-                    svg += `<text x="${cx+25}" y="${idrY+15}" class="diagram-text">IDR ${g.sensitivity}mA</text>`;
+                    svg += `<use href="#sym-rcd" x="${cx}" y="${idrTopY}" />`;
+                    svg += `<text x="${cx+10}" y="${idrTopY+20}" class="label" font-weight="bold">IDR ${g.sensitivity}mA</text>`;
                     
-                    // Distribution Bar under IDR
-                    const distY = idrY + 50;
-                    svg += `<line x1="${cx}" y1="${idrY+25}" x2="${cx}" y2="${distY}" class="diagram-line" />`;
-                    svg += `<line x1="${drawX}" y1="${distY}" x2="${drawX + gw - SPACING_X}" y2="${distY}" class="diagram-line" />`; // Horizontal spread
+                    const distBarY = idrTopY + 60;
+                    
+                    // Line from IDR to Dist Bar
+                    svg += `<line x1="${cx}" y1="${idrTopY+40}" x2="${cx}" y2="${distBarY}" stroke="#0f172a" stroke-width="1.5" />`;
+                    
+                    // Distribution Bar Horizontal
+                    const startDistX = drawX;
+                    const endDistX = drawX + gw - SPACING_X;
+                    if (g.circuits.length > 1) {
+                        svg += `<line x1="${startDistX}" y1="${distBarY}" x2="${endDistX}" y2="${distBarY}" stroke="#0f172a" stroke-width="1.5" />`;
+                    }
                     
                     g.circuits.forEach((c, idx) => {
                         const cX = drawX + (idx * SPACING_X);
+                        const breakerTopY = distBarY + 20;
                         
-                        // Line Down
-                        svg += `<line x1="${cX}" y1="${distY}" x2="${cX}" y2="${distY+20}" class="diagram-line" />`;
+                        // Dot on Dist Bar
+                        if (g.circuits.length > 1) svg += `<circle cx="${cX}" cy="${distBarY}" r="2" fill="black" />`;
+                        
+                        // Line to Breaker
+                        svg += `<line x1="${cX}" y1="${distBarY}" x2="${cX}" y2="${breakerTopY}" stroke="#0f172a" stroke-width="1.5" />`;
                         
                         // Breaker Symbol
-                        const brkY = distY + 20;
-                        svg += `<rect x="${cX-10}" y="${brkY}" width="20" height="30" class="diagram-symbol" />`;
-                        svg += `<line x1="${cX-10}" y1="${brkY}" x2="${cX+10}" y2="${brkY+30}" class="diagram-line" />`;
-                        svg += `<text x="${cX+15}" y="${brkY+15}" class="diagram-text">${c.curve}${c.results.breakerIn}</text>`;
+                        svg += `<use href="#sym-mcb" x="${cX}" y="${breakerTopY}" />`;
+                        svg += `<text x="${cX+8}" y="${breakerTopY+25}" class="label" font-weight="bold">${c.curve}${c.results.breakerIn}</text>`;
                         
-                        // Accessories
-                        let accY = brkY + 30;
+                        let currentY = breakerTopY + 40;
+
+                        // Contactor
                         if(c.hasContactor) {
-                            svg += `<rect x="${cX-8}" y="${accY+5}" width="16" height="10" class="diagram-symbol" />`;
-                            svg += `<text x="${cX+12}" y="${accY+12}" class="diagram-text" font-size="8">KM</text>`;
-                            accY += 20;
+                             svg += `<line x1="${cX}" y1="${currentY}" x2="${cX}" y2="${currentY+10}" stroke="#0f172a" stroke-width="1.5" />`;
+                             currentY += 10;
+                             svg += `<use href="#sym-km" x="${cX}" y="${currentY}" />`;
+                             svg += `<text x="${cX+12}" y="${currentY+15}" class="label">KM</text>`;
+                             currentY += 20;
                         }
+
+                        // Outgoing Line
+                        svg += `<line x1="${cX}" y1="${currentY}" x2="${cX}" y2="${height-140}" stroke="#0f172a" stroke-width="1.5" />`;
                         
-                        // Line to Cable info
-                        svg += `<line x1="${cX}" y1="${brkY+30}" x2="${cX}" y2="${accY+30}" class="diagram-line" />`;
-                        
-                        // Cable Text
-                        const is3 = parseInt(c.phases) === 3;
-                        const voltText = is3 ? "400V" : "230V";
-                        svg += `<text x="${cX}" y="${accY+40}" class="diagram-text" text-anchor="middle">${is3?'5':'3'}G${c.results.cableSection}</text>`;
-                        svg += `<text x="${cX}" y="${accY+50}" class="diagram-text" text-anchor="middle" font-size="8">${voltText}</text>`;
-                        
-                        // Line to Load
-                        svg += `<line x1="${cX}" y1="${accY+50}" x2="${cX}" y2="${accY+80}" class="diagram-line" />`;
-                        
-                        // Load Symbol (Arrow)
-                        svg += `<line x1="${cX}" y1="${accY+80}" x2="${cX}" y2="${accY+90}" class="diagram-line" marker-end="url(#arrow)" />`;
-                        
-                        // Label Rotated
-                        svg += `<text x="${cX}" y="${accY+100}" transform="rotate(90, ${cX}, ${accY+100})" class="diagram-text" style="font-size:9px; font-weight:500;">${c.name}</text>`;
+                        // Terminal
+                        svg += `<circle cx="${cX}" cy="${height-140}" r="3" fill="white" stroke="#0f172a" stroke-width="1.5" />`;
+                        svg += `<text x="${cX+5}" y="${height-138}" class="label" font-weight="bold">X${idx+1}</text>`;
+
+                        // Cable & Load Info (Vertical)
+                        svg += `<text x="${cX}" y="${height-120}" class="label" text-anchor="middle">${c.phases==3?'5':'3'}G${c.results.cableSection}</text>`;
+                        svg += `<text x="${cX}" y="${height-110}" class="label" text-anchor="middle" font-weight="bold">${c.name}</text>`;
                     });
                     
                     drawX += gw + SPACING_GROUP;
@@ -808,172 +1133,252 @@
                 cabling: 0,
                 enclosures: 0,
                 engineering: 0,
-                labor: 0
+                labor: 0,
+                accessories: 0
             };
             
-            let items = []; // Array of {desc, qty, unit, price, total}
+            let items = [];
+            let totalModules = 0;
 
-            // 1. Switchgear
             appData.boards.forEach(b => {
-                // Board Enclosure Estimate (18 mods per row, rough calc)
-                let totalMods = 0;
-                b.groups.forEach(g => {
-                    totalMods += 4; // IDR
-                    totalMods += g.circuits.length * (parseInt(g.circuits[0]?.phases||1) === 3 ? 3 : 1);
-                });
-                let enclosureCost = (Math.ceil(totalMods/18) * 18 * PRICES.board_module) + 150; // Base box price
-                costs.enclosures += enclosureCost;
-                items.push({desc: `Quadro Elétrico ${b.name} (${totalMods} mod)`, qty: 1, unit: 'un', price: enclosureCost, total: enclosureCost});
+                // Enclosure Options
+                if(b.options) {
+                    if(b.options.mxCoil) { costs.accessories += PRICES.mx_coil; items.push({name: `Bobine MX (${b.name})`, price: PRICES.mx_coil}); }
+                    if(b.options.signalLights) { costs.accessories += PRICES.signal_lights; items.push({name: `Sinalizadores Fase (${b.name})`, price: PRICES.signal_lights}); }
+                    if(b.options.socket) { costs.accessories += PRICES.socket; items.push({name: `Tomada Schuko Calha (${b.name})`, price: PRICES.socket}); }
+                    if(b.options.overvoltage) { costs.accessories += PRICES.overvoltage; items.push({name: `Relé Sobretensão (${b.name})`, price: PRICES.overvoltage}); }
+                    if(b.options.ups) { costs.accessories += PRICES.ups; items.push({name: `UPS Comando (${b.name})`, price: PRICES.ups}); }
+                    if(b.options.analyzer) { costs.accessories += PRICES.analyzer; items.push({name: `Analisador Energia (${b.name})`, price: PRICES.analyzer}); }
+                    if(b.options.transformer) { costs.accessories += PRICES.transformer; items.push({name: `Transformador Isolamento (${b.name})`, price: PRICES.transformer}); }
+                    
+                    // Door Price Adjust
+                    if(b.options.transparentDoor) { costs.enclosures += PRICES.transparent_door_add; }
+                }
 
                 b.groups.forEach(g => {
                     // IDR
-                    let idrPrice = g.circuits.some(c=>c.phases==3) ? PRICES.idr_4P : PRICES.idr_2P;
+                    let idrPrice = appData.mainVoltage===400 ? PRICES.idr_4P : PRICES.idr_2P;
                     costs.switchgear += idrPrice;
-                    items.push({desc: `Diferencial IDR ${g.sensitivity}mA`, qty: 1, unit: 'un', price: idrPrice, total: idrPrice});
+                    totalModules += 4; // Approx
 
                     g.circuits.forEach(c => {
                         // Breaker
-                        let brkPrice = c.phases==3 ? PRICES.breaker_3P : PRICES.breaker_1P;
+                        let brkPrice = c.phases===3 ? PRICES.breaker_3P : PRICES.breaker_1P;
                         costs.switchgear += brkPrice;
-                        items.push({desc: `Disjuntor ${c.curve}${c.results.breakerIn} (${c.phases==3?'Tri':'Mono'})`, qty: 1, unit: 'un', price: brkPrice, total: brkPrice});
+                        totalModules += c.phases===3 ? 3 : 1;
 
+                        // Cable
+                        let cablePrice = (PRICES.cable[c.results.cableSection] || 2.0) * c.dist;
+                        costs.cabling += cablePrice;
+                        
                         // Accessories
-                        if(c.hasContactor) { costs.switchgear += PRICES.contactor; items.push({desc: 'Contactor de Potência', qty:1, unit:'un', price: PRICES.contactor, total: PRICES.contactor}); }
-                        if(c.hasMeter) { costs.switchgear += PRICES.meter; items.push({desc: 'Contador de Energia', qty:1, unit:'un', price: PRICES.meter, total: PRICES.meter}); }
-                        if(c.hasVfd) { costs.switchgear += PRICES.vfd_base; items.push({desc: 'Variador de Frequência', qty:1, unit:'un', price: PRICES.vfd_base, total: PRICES.vfd_base}); }
-
-                        // Cabling
-                        let cablePrice = PRICES.cable[c.results.cableSection.toString()] || 20;
-                        let lineTotal = cablePrice * c.dist;
-                        costs.cabling += lineTotal;
-                        items.push({desc: `Cabo ${c.phases==3?'5':'3'}G${c.results.cableSection}mm²`, qty: c.dist, unit: 'm', price: cablePrice, total: lineTotal});
+                        if(c.hasContactor) { costs.switchgear += PRICES.contactor; totalModules+=2; }
+                        if(c.hasMeter) { costs.switchgear += PRICES.meter; totalModules+=2; }
+                        if(c.hasVfd) { costs.switchgear += PRICES.vfd_base; items.push({name: `Variador Freq. ${c.power}kW`, price: PRICES.vfd_base}); }
                     });
                 });
+                
+                // Enclosure cost based on modules
+                let boardBaseCost = 100 + (totalModules * PRICES.board_module); 
+                costs.enclosures += boardBaseCost;
             });
 
-            // 2. Labor & Eng
-            // Rough estimate: 2h per board + 1h per circuit + 0.1h per meter of cable
-            let totalCircuits = 0;
-            let totalDist = 0;
-            appData.boards.forEach(b => b.groups.forEach(g => g.circuits.forEach(c => { totalCircuits++; totalDist += c.dist; })));
-            
-            let hours = (appData.boards.length * 4) + (totalCircuits * 1.5) + (totalDist * 0.05);
-            costs.labor = hours * PRICES.labor_hour;
-            items.push({desc: 'Mão de Obra (Instalação e Montagem)', qty: Math.ceil(hours), unit: 'h', price: PRICES.labor_hour, total: costs.labor});
-
-            costs.engineering = PRICES.engineering_base + (appData.boards.length * 150);
-            items.push({desc: 'Serviços de Engenharia / Projeto', qty: 1, unit: 'un', price: costs.engineering, total: costs.engineering});
+            // Engineering & Labor
+            costs.engineering = PRICES.engineering_base + (appData.boards.length * 100);
+            costs.labor = (totalModules * 0.5) * PRICES.labor_hour; // 30 mins per module approx
 
             return { costs, items };
         }
 
-        function generateReport() {
-            // Fill Cover
-            document.getElementById('rpt-project').innerText = appData.projectName || 'N/A';
-            document.getElementById('rpt-tech').innerText = appData.technicianName || 'N/A';
-            document.getElementById('rpt-sys').innerText = appData.mainVoltage + "V";
-            document.getElementById('rpt-date').innerText = new Date().toLocaleDateString();
+        function showQuantityModal() {
+            const { costs, items } = calculateBudget();
+            const total = Object.values(costs).reduce((a,b)=>a+b,0);
+            
+            let html = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Aparelhagem (Corte/Prot)</span>
+                            <span class="font-bold text-slate-800">${costs.switchgear.toFixed(2)} €</span>
+                        </div>
+                         <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Invólucros & Quadros</span>
+                            <span class="font-bold text-slate-800">${costs.enclosures.toFixed(2)} €</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Cablagem</span>
+                            <span class="font-bold text-slate-800">${costs.cabling.toFixed(2)} €</span>
+                        </div>
+                         <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Acessórios/Extras</span>
+                            <span class="font-bold text-slate-800">${costs.accessories.toFixed(2)} €</span>
+                        </div>
+                         <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Mão de Obra</span>
+                            <span class="font-bold text-slate-800">${costs.labor.toFixed(2)} €</span>
+                        </div>
+                         <div class="p-3 bg-slate-50 rounded border border-slate-100">
+                            <span class="block text-xs text-slate-500 uppercase">Projeto/Engenharia</span>
+                            <span class="font-bold text-slate-800">${costs.engineering.toFixed(2)} €</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-slate-200">
+                        <h4 class="font-bold text-lg text-slate-800 mb-2">Itens Específicos</h4>
+                        <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                            ${items.map(i => `<li>${i.name} - ${i.price.toFixed(2)}€</li>`).join('')}
+                            ${items.length===0 ? '<li class="text-slate-400 italic">Nenhum item especial</li>' : ''}
+                        </ul>
+                    </div>
 
-            // Fill Budget
-            const budget = calculateBudget();
-            const bDiv = document.getElementById('budget-container');
-            let bHtml = `
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-slate-50 p-4 rounded border border-slate-200">
-                        <div class="text-xs text-slate-500 uppercase">Quadros & Equip.</div>
-                        <div class="text-xl font-bold text-slate-800">${(budget.costs.switchgear + budget.costs.enclosures).toFixed(2)}€</div>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded border border-slate-200">
-                        <div class="text-xs text-slate-500 uppercase">Cablagem</div>
-                        <div class="text-xl font-bold text-slate-800">${budget.costs.cabling.toFixed(2)}€</div>
-                    </div>
-                    <div class="bg-slate-50 p-4 rounded border border-slate-200">
-                        <div class="text-xs text-slate-500 uppercase">Mão de Obra</div>
-                        <div class="text-xl font-bold text-slate-800">${budget.costs.labor.toFixed(2)}€</div>
-                    </div>
-                    <div class="bg-blue-600 p-4 rounded text-white shadow-lg">
-                        <div class="text-xs text-blue-100 uppercase">Total Estimado</div>
-                        <div class="text-2xl font-bold">${(Object.values(budget.costs).reduce((a,b)=>a+b,0)).toFixed(2)}€</div>
+                    <div class="mt-6 p-4 bg-blue-600 text-white rounded-lg flex justify-between items-center">
+                        <span class="font-medium">Total Estimado</span>
+                        <span class="text-2xl font-bold">${total.toFixed(2)} €</span>
                     </div>
                 </div>
-                <table class="w-full text-sm">
-                    <thead><tr class="bg-slate-100 text-slate-700"><th class="p-2 text-left">Descrição</th><th class="p-2 text-right">Qtd</th><th class="p-2 text-right">Preço Un.</th><th class="p-2 text-right">Total</th></tr></thead>
-                    <tbody>`;
-            budget.items.forEach(item => {
-                bHtml += `<tr class="border-b border-slate-100">
-                    <td class="p-2">${item.desc}</td>
-                    <td class="p-2 text-right font-mono text-xs">${item.qty} ${item.unit}</td>
-                    <td class="p-2 text-right font-mono text-xs">${item.price.toFixed(2)}€</td>
-                    <td class="p-2 text-right font-mono font-bold text-xs">${item.total.toFixed(2)}€</td>
-                </tr>`;
-            });
-            bHtml += `</tbody></table>`;
-            bDiv.innerHTML = bHtml;
-
-            // Fill Tables
-            const tDiv = document.getElementById('report-tables');
-            tDiv.innerHTML = '';
-            appData.boards.forEach(b => {
-                let html = `<div class="report-page page-break"><h3 class="text-xl font-bold mb-4">Tabela Técnica: ${b.name}</h3>`;
-                html += `<table class="w-full text-xs text-left border border-slate-200">
-                    <thead class="bg-slate-100 font-bold"><tr><th class="p-2">Circuito</th><th class="p-2 text-right">Pot (kW)</th><th class="p-2 text-right">Ib (A)</th><th class="p-2 text-center">Prot</th><th class="p-2 text-center">Cabo</th><th class="p-2 text-right">Q.T. (%)</th></tr></thead><tbody>`;
-                b.groups.forEach(g => {
-                    html += `<tr class="bg-slate-50"><td colspan="6" class="p-2 font-bold border-t border-slate-200">${g.name} (IDR ${g.sensitivity}mA)</td></tr>`;
-                    g.circuits.forEach(c => {
-                        html += `<tr class="border-t border-slate-100">
-                            <td class="p-2">${c.name}</td><td class="p-2 text-right">${c.power}</td><td class="p-2 text-right font-mono">${c.results.ib}</td>
-                            <td class="p-2 text-center font-bold">${c.curve}${c.results.breakerIn}</td>
-                            <td class="p-2 text-center font-mono">${c.results.cableSection}mm²</td>
-                            <td class="p-2 text-right font-bold ${c.results.voltageDrop>3?'text-red-600':'text-green-600'}">${c.results.voltageDrop}</td>
-                        </tr>`;
-                    });
-                });
-                html += `</tbody></table></div>`;
-                tDiv.innerHTML += html;
-            });
-
-            // Fill Schematics
-            const sDiv = document.getElementById('report-schematics');
-            sDiv.innerHTML = '';
-            const svgs = generateSVGs();
-            svgs.forEach((svg, i) => {
-                sDiv.innerHTML += `<div class="report-page page-break flex flex-col items-center justify-center">
-                    <h3 class="text-xl font-bold mb-8 w-full text-left">Esquema Unifilar: ${appData.boards[i].name}</h3>
-                    ${svg}
-                </div>`;
-            });
-
-            // Show Report
-            document.getElementById('app-header').classList.add('hidden'); // Hide navbar
-            document.getElementById('app-main').classList.add('hidden');
-            document.getElementById('report-view').classList.remove('hidden');
-            document.getElementById('report-view').classList.remove('print-only');
-        }
-
-        function closeReport() {
-            document.getElementById('report-view').classList.add('hidden');
-            document.getElementById('report-view').classList.add('print-only');
-            document.getElementById('app-main').classList.remove('hidden');
-            document.getElementById('app-header').classList.remove('hidden');
-        }
-
-        // Materials Modal
-        function showQuantityModal() {
-            const b = calculateBudget();
-            let html = '<ul class="space-y-2">';
-            // Group by item name roughly for simple list
-            let consolidated = {};
-            b.items.forEach(i => {
-                if(consolidated[i.desc]) consolidated[i.desc] += i.qty; else consolidated[i.desc] = i.qty;
-            });
-            for(let k in consolidated) {
-                html += `<li class="flex justify-between border-b border-slate-100 pb-1 text-sm"><span>${k}</span><span class="font-bold">${consolidated[k].toFixed(1)}</span></li>`;
-            }
-            html += '</ul>';
+            `;
             document.getElementById('qty-modal-content').innerHTML = html;
             document.getElementById('quantity-modal').classList.remove('hidden');
         }
 
+        function generateReport() {
+            try {
+                recalculateAll();
+                const now = new Date();
+                document.getElementById('rpt-project').innerText = appData.projectName || "N/D";
+                document.getElementById('rpt-tech').innerText = appData.technicianName || "N/D";
+                document.getElementById('rpt-sys').innerText = appData.mainVoltage + "V AC";
+                document.getElementById('rpt-date').innerText = now.toLocaleDateString();
+                
+                // Budget Page
+                const { costs, items } = calculateBudget();
+                const total = Object.values(costs).reduce((a,b)=>a+b,0);
+                
+                let budgetHtml = `
+                    <table class="w-full mb-6">
+                        <thead class="bg-slate-800 text-white">
+                            <tr><th class="p-3 text-left">Rubrica</th><th class="p-3 text-right">Valor (€)</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="p-3 border-b">Quadro Elétrico (Invólucro + Montagem)</td><td class="p-3 border-b text-right font-mono">${costs.enclosures.toFixed(2)}</td></tr>
+                            <tr><td class="p-3 border-b">Aparelhagem Corte e Proteção</td><td class="p-3 border-b text-right font-mono">${costs.switchgear.toFixed(2)}</td></tr>
+                            <tr><td class="p-3 border-b">Cablagem e Caminhos de Cabos (Est.)</td><td class="p-3 border-b text-right font-mono">${costs.cabling.toFixed(2)}</td></tr>
+                            <tr><td class="p-3 border-b">Equipamentos Auxiliares e Acessórios</td><td class="p-3 border-b text-right font-mono">${costs.accessories.toFixed(2)}</td></tr>
+                            <tr><td class="p-3 border-b">Mão de Obra (Instalação)</td><td class="p-3 border-b text-right font-mono">${costs.labor.toFixed(2)}</td></tr>
+                            <tr><td class="p-3 border-b">Serviços de Engenharia e Projeto</td><td class="p-3 border-b text-right font-mono">${costs.engineering.toFixed(2)}</td></tr>
+                            <tr class="bg-slate-100 font-bold"><td class="p-3">TOTAL GERAL</td><td class="p-3 text-right font-mono text-lg">${total.toFixed(2)}</td></tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4 class="font-bold text-slate-800 mb-3">Detalle de Itens Especiais</h4>
+                     <table class="w-full text-sm">
+                        <thead class="bg-slate-100">
+                            <tr><th class="p-2 text-left">Item</th><th class="p-2 text-right">Custo Unit.</th></tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(i => `<tr><td class="p-2 border-b">${i.name}</td><td class="p-2 border-b text-right">${i.price.toFixed(2)}</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                `;
+                document.getElementById('budget-container').innerHTML = budgetHtml;
+
+                // Circuit Tables
+                const tablesContainer = document.getElementById('report-tables');
+                tablesContainer.innerHTML = '';
+                
+                appData.boards.forEach(b => {
+                    let tblHtml = `
+                    <div class="report-page page-break">
+                         <h3 class="text-xl font-bold text-slate-800 mb-4 border-l-4 border-blue-600 pl-3">${b.name} - Listagem de Circuitos</h3>
+                         <div class="mb-4 text-sm text-slate-600 grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded">
+                            <div><strong>Opções:</strong> ${Object.entries(b.options||{}).filter(([k,v])=>v).map(([k,v])=> k).join(', ') || 'Standard'}</div>
+                         </div>
+                         <table>
+                            <thead>
+                                <tr>
+                                    <th class="text-left">Ref</th>
+                                    <th class="text-left">Designação</th>
+                                    <th class="text-center">Pot (kW)</th>
+                                    <th class="text-center">Fases</th>
+                                    <th class="text-center">Comp (m)</th>
+                                    <th class="text-center">Prot (A)</th>
+                                    <th class="text-center">Cabo (mm²)</th>
+                                    <th class="text-center">Q.T. (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                    
+                    let cIdx = 1;
+                    b.groups.forEach(g => {
+                        tblHtml += `<tr class="bg-slate-100"><td colspan="8" class="font-bold text-xs uppercase text-slate-600 px-2 py-1">${g.name} (IDR ${g.sensitivity}mA)</td></tr>`;
+                        g.circuits.forEach(c => {
+                            tblHtml += `
+                            <tr>
+                                <td class="text-center font-mono text-xs text-slate-500">${cIdx++}</td>
+                                <td>${c.name}</td>
+                                <td class="text-center">${c.power}</td>
+                                <td class="text-center">${parseInt(c.phases)===3 ? '3~' : '1~'}</td>
+                                <td class="text-center">${c.dist}</td>
+                                <td class="text-center font-bold">${c.curve}${c.results.breakerIn}</td>
+                                <td class="text-center">${c.results.cableSection}</td>
+                                <td class="text-center ${c.results.voltageDrop>3?'text-red-600 font-bold':''}">${c.results.voltageDrop}</td>
+                            </tr>`;
+                        });
+                    });
+                    tblHtml += `</tbody></table></div>`;
+                    tablesContainer.innerHTML += tblHtml;
+                });
+                
+                // Terminal Blocks
+                const termContainer = document.getElementById('report-terminals');
+                termContainer.innerHTML = '';
+                appData.boards.forEach(b => {
+                    termContainer.innerHTML += `<div class="report-page page-break">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 border-l-4 border-blue-600 pl-3">${b.name} - Régua de Bornes</h3>
+                        ${generateTerminalBlockHTML(b.id)}
+                    </div>`;
+                });
+
+                // Schematics
+                const schematicsContainer = document.getElementById('report-schematics');
+                schematicsContainer.innerHTML = '';
+                const svgs = generateSVGs();
+                svgs.forEach(svg => {
+                    schematicsContainer.innerHTML += `<div class="report-page page-break flex flex-col items-center justify-center">${svg}</div>`;
+                });
+
+                // Back Cover
+                const backCover = document.getElementById('report-back-cover');
+                backCover.innerHTML = `
+                    <div class="report-page page-break flex flex-col items-center justify-between text-center bg-slate-900 text-white" style="background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                        <div class="flex-1 flex flex-col justify-center items-center gap-8">
+                            <div class="w-32 h-32 border-4 border-white rounded-full flex items-center justify-center mb-6">
+                                <i class="fa-solid fa-bolt text-6xl text-white"></i>
+                            </div>
+                            <h1 class="text-5xl font-bold tracking-widest uppercase">K-CALELEC</h1>
+                            <div class="w-24 h-1 bg-blue-500"></div>
+                            <p class="text-xl font-light text-slate-300 uppercase tracking-widest">Engenharia Eletrotécnica</p>
+                        </div>
+                        
+                        <div class="pb-20 space-y-2">
+                            <p class="text-sm text-slate-400 uppercase tracking-widest">Gerado em</p>
+                            <p class="text-xl font-bold mb-8">${now.toLocaleDateString()}</p>
+                            
+                            <p class="text-xs text-slate-500 mt-12 font-mono">By Koelho2000</p>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('report-view').classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao gerar relatório. Verifique os dados.");
+            }
+        }
+
+        function closeReport() {
+            document.getElementById('report-view').classList.add('hidden');
+        }
     </script>
 </body>
 </html>
